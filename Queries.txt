@@ -1,0 +1,381 @@
+
+select distinct location,PROVINCE,ISLAND from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli;
+
+select * from  fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia'
+order by TO_DATE(DATE,'MM/DD/YYYY') asc ;
+
+total_active_cases(day) = new_cases(day) + total_activate_cases(day-1) - new_recovered(day))
+
+--death(new_deaths), total_death, recoveries(sum of new_recoveries ,new_deaths , active_cases(new_active_Cases) )
+
+select TOTAL_DEATHS from   fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli;
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths,LAG(PercentageVal,1) over(order by DATE_FORMED)  PercentageVal from (
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths, 
+-100*(1-LEAD(total_deaths) over (order by 3)/total_deaths) PercentageVal   from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia' 
+group by 2,3 order by 1,3,2 
+) where total_deaths <> 0 order by 1) order by 1
+
+
+
+
+
+
+*******************
+
+
+select distinct location,PROVINCE,ISLAND from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli;
+
+select * from  fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia'
+order by TO_DATE(DATE,'MM/DD/YYYY') asc ;
+
+total_active_cases(day) = new_cases(day) + total_activate_cases(day-1) - new_recovered(day))
+
+--death(new_deaths), total_death, recoveries(sum of new_recoveries ,new_deaths , active_cases(new_active_Cases) )
+
+select TOTAL_DEATHS from   fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli;
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths,LAG(PercentageVal,1) over(order by DATE_FORMED)  PercentageVal from (
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths, 
+-100*(1-LEAD(total_deaths) over (order by 3)/total_deaths) PercentageVal   from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia' 
+group by 2,3 order by 1,3,2 
+) where total_deaths <> 0 order by 1) order by 1;
+
+select * from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli
+
+-- if(@last_entry = 0, 0, round(((total_deaths - @last_entry) / @last_entry) * 100,2)) perct, @last_entry:=total_deaths
+
+create table WeekOverWeek_TotalDeath AS
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths,
+case when lag(total_deaths) over (order by DATE_FORMED) = 0 then 100 * (total_deaths / 1 ) 
+else 100 * (total_deaths / lag(total_deaths) over (order by DATE_FORMED) -1) end  as  perct_total_deaths 
+from ( 
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)  order by 1;
+
+create table WeekOverWeek_NewCases AS
+select DATE_FORMED,WhichYear,WhichWeek,new_cases, 
+case when lag(new_cases) over (order by DATE_FORMED) = 0 then 100 * (new_cases / 1 ) 
+else 100 * (new_cases / lag(new_cases) over (order by DATE_FORMED) -1) end  as  perct_new_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek , sum(new_cases) new_cases
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)  order by 1;
+
+
+select * from  fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli
+
+create table WeekOverWeek_NewRecovered AS
+select DATE_FORMED,WhichYear,WhichWeek,new_recovered, 
+case when lag(new_recovered) over (order by DATE_FORMED) = 0 then 100 * (new_recovered / 1 ) 
+else 100 * (new_recovered / lag(new_recovered) over (order by DATE_FORMED) -1) end  as  perct_new_recovered 
+--100 * (active_cases / lag(active_cases) over (order by DATE_FORMED) -1)  as  perct_active_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,
+  sum(new_recovered) new_recovered
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)   order by 1;
+
+create table WeekOverWeek_ActiveCases AS
+select DATE_FORMED,WhichYear,WhichWeek,active_cases, 
+case when lag(active_cases) over (order by DATE_FORMED) = 0 then 100 * (active_cases / 1 ) 
+else 100 * (active_cases / lag(active_cases) over (order by DATE_FORMED) -1) end  as  perct_active_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,
+  sum(new_active_cases) active_cases
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)   order by 1;
+
+
+
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+Month(TO_DATE(DATE,'MM/DD/YYYY')) as WhichMonth ,
+  sum(new_active_cases) active_cases
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+
+------------------ Month Over Month
+
+create table MonthOverMonth_TotalDeath AS
+select DATE_FORMED,WhichYear,WhichMonth,total_deaths,
+case when lag(total_deaths) over (order by DATE_FORMED) = 0 then 100 * (total_deaths / 1 ) 
+else 100 * (total_deaths / lag(total_deaths) over (order by DATE_FORMED) -1) end  as  perct_total_deaths 
+from ( 
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+MONTH(TO_DATE(DATE,'MM/DD/YYYY')) as WhichMonth ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)  order by 1;
+
+
+create table MonthOverMonth_NewCases AS
+select DATE_FORMED,WhichYear,WhichMonth,new_cases, 
+case when lag(new_cases) over (order by DATE_FORMED) = 0 then 100 * (new_cases / 1 ) 
+else 100 * (new_cases / lag(new_cases) over (order by DATE_FORMED) -1) end  as  perct_new_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+MONTH(TO_DATE(DATE,'MM/DD/YYYY')) as WhichMonth , sum(new_cases) new_cases
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)  order by 1;
+
+
+
+
+create table MonthOverMonth_NewRecovered AS
+select DATE_FORMED,WhichYear,WhichMonth,new_recovered, 
+case when lag(new_recovered) over (order by DATE_FORMED) = 0 then 100 * (new_recovered / 1 ) 
+else 100 * (new_recovered / lag(new_recovered) over (order by DATE_FORMED) -1) end  as  perct_new_recovered 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+MONTH(TO_DATE(DATE,'MM/DD/YYYY')) as WhichMonth ,
+  sum(new_recovered) new_recovered
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)   order by 1;
+
+create table MonthOverMonth_ActiveCases AS
+select DATE_FORMED,WhichYear,WhichMonth,active_cases, 
+case when lag(active_cases) over (order by DATE_FORMED) = 0 then 100 * (active_cases / 1 ) 
+else 100 * (active_cases / lag(active_cases) over (order by DATE_FORMED) -1) end  as  perct_active_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+MONTH(TO_DATE(DATE,'MM/DD/YYYY')) as WhichMonth ,
+  sum(new_active_cases) active_cases
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)   order by 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+where total_deaths <> 0 order by 1;
+
+
+
+
+
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths, 
+-100*(1-MAX(total_deaths) over (order by 1)/total_deaths)   from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia' 
+group by 2,3 order by 1,3,2 
+) where total_deaths <> 0 order by 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+create table LOCATION_DM_MODEL_DETAILS AS 
+
+select  distinct POPULATION_DENSITY,CONTINENT,SPECIAL_STATUS,AREA_KM_2_,
+location_iso_code, country,location_level,location,PROVINCE,LATITUDE,LONGITUDE,ISLAND,TIME_ZONE
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli ; 
+
+CREATE TABLE REGION_HIGH_DEATH_RATE as 
+select LOCATION,AVG(TOTAL_DEATHS_PER_MILLION) as AVG_DEATH_RATE
+from  fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 1 order  by 2 desc;
+
+select AVG(TOTAL_RECOVERED) AVG_TOTAL_RECV, 
+AVG(NEW_CASES_PER_MILLION) 
+
+
+
+
+
+
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths, 
+100 * (total_deaths / lag(total_deaths) over (order by DATE_FORMED) -1)  as  perct   from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia' 
+group by 2,3 order by 1,3,2 
+) where total_deaths <> 0 order by 1
+
+
+
+
+
+
+
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths, 
+-100*(1-MAX(total_deaths) over (order by 1)/total_deaths)   from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia' 
+group by 2,3 order by 1,3,2 
+) where total_deaths <> 0 order by 1
+
+
+
+
+
+
+
+
+
+************************
+
+
+
+select distinct location,PROVINCE,ISLAND from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli;
+
+select * from  fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia'
+order by TO_DATE(DATE,'MM/DD/YYYY') asc ;
+
+total_active_cases(day) = new_cases(day) + total_activate_cases(day-1) - new_recovered(day))
+
+--death(new_deaths), total_death, recoveries(sum of new_recoveries ,new_deaths , active_cases(new_active_Cases) )
+
+select TOTAL_DEATHS from   fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli;
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths,LAG(PercentageVal,1) over(order by DATE_FORMED)  PercentageVal from (
+
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths, 
+-100*(1-LEAD(total_deaths) over (order by 3)/total_deaths) PercentageVal   from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli where LOCATION = 'Indonesia' 
+group by 2,3 order by 1,3,2 
+) where total_deaths <> 0 order by 1) order by 1;
+
+select * from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli
+
+-- if(@last_entry = 0, 0, round(((total_deaths - @last_entry) / @last_entry) * 100,2)) perct, @last_entry:=total_deaths
+
+create table WeekOverWeek_TotalDeath AS
+select DATE_FORMED,WhichYear,WhichWeek,total_deaths,
+case when lag(total_deaths) over (order by DATE_FORMED) = 0 then 100 * (total_deaths / 1 ) 
+else 100 * (total_deaths / lag(total_deaths) over (order by DATE_FORMED) -1) end  as  perct_total_deaths 
+from ( 
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,sum(new_deaths) total_deaths 
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)  order by 1;
+
+create table WeekOverWeek_NewCases AS
+select DATE_FORMED,WhichYear,WhichWeek,new_cases, 
+case when lag(new_cases) over (order by DATE_FORMED) = 0 then 100 * (new_cases / 1 ) 
+else 100 * (new_cases / lag(new_cases) over (order by DATE_FORMED) -1) end  as  perct_new_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek , sum(new_cases) new_cases
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)  order by 1;
+
+
+select * from  fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli
+
+create table WeekOverWeek_NewRecovered AS
+select DATE_FORMED,WhichYear,WhichWeek,new_recovered, 
+case when lag(new_recovered) over (order by DATE_FORMED) = 0 then 100 * (new_recovered / 1 ) 
+else 100 * (new_recovered / lag(new_recovered) over (order by DATE_FORMED) -1) end  as  perct_new_recovered 
+--100 * (active_cases / lag(active_cases) over (order by DATE_FORMED) -1)  as  perct_active_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,
+  sum(new_recovered) new_recovered
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)   order by 1;
+
+create table WeekOverWeek_ActiveCases AS
+select DATE_FORMED,WhichYear,WhichWeek,active_cases, 
+case when lag(active_cases) over (order by DATE_FORMED) = 0 then 100 * (active_cases / 1 ) 
+else 100 * (active_cases / lag(active_cases) over (order by DATE_FORMED) -1) end  as  perct_active_cases 
+from (
+select MAX(TO_DATE(DATE,'MM/DD/YYYY')) DATE_FORMED, YEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichYear,
+WEEKOFYEAR(TO_DATE(DATE,'MM/DD/YYYY')) as WhichWeek ,
+  sum(new_active_cases) active_cases
+from fivetran_interview_db.google_sheets.covid_19_indonesia_avinash_sanagapalli 
+group by 2,3 order by 1,3,2 
+)   order by 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
