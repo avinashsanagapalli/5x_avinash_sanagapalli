@@ -1,0 +1,1 @@
+total_active_cases(day) = new_cases(day) + total_activate_cases(day-1) - new_recovered(day))
